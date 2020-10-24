@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Change a map's style</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+<style>
+	body { margin: 0; padding: 0; }
+	#map {  width: 100%; height: 90vh;}
+</style>
+</head>
+<body>
+<style>
+    .container {
+        display: flex;
+        flex-direction: column-reverse;
+        height: auto;
+    }
+
+    .container.close-map {
+        display: flex;
+    }
+
+    .container.close-map #map {
+        display: none;
+    }
+    .card-list {
+        height: 50vh;
+        padding: 8px;
+        width: 100%;
+    }
+
+    #menu {
+        position: absolute;
+        background: #fff;
+        padding: 10px;
+        font-family: 'Open Sans', sans-serif;
+    }
+
+    #card-list {
+        transition: 2s ease-in;
+    }
+    .card {
+        width: 100%;
+        height:auto;
+        background-color: #fff;
+        box-shadow: 2px 2px 0.4em #585858;
+        margin: 15px 0px;
+    }
+
+    .img {
+        width: 100%;
+        height:200px;
+        object-fit: cover;
+    }
+
+    figcaption {
+        padding: 0.1em 0.3em;
+    }
+
+    .details-section {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .toggle-map {
+        width: 100%;
+        background-color: khaki;
+    }
+
+    @media screen and (min-width: 50em) {
+        .container {
+            display:grid;
+            grid-template-columns: 1fr 2fr;
+            grid-gap: 1em;
+            height: auto;
+            position: relative;
+        }
+
+        .container.close-map {
+            grid-template-columns: 1fr 2fr;
+        }
+
+        .container.close-map #map {
+            display: none;
+        }
+        #map {
+            height: 100vh;
+            position: sticky;
+            top:0;
+        }
+
+        .container.close-map #card-list  {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: grid;
+            grid-gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 2fr) ) ;
+        }
+
+
+        .card-list {
+            height: auto;
+            z-index: 1;
+            box-shadow: 2px 2px 0.3em #979797;
+        }
+
+    }
+</style>
+<div class="container" id="container">
+    <div class="card-list">
+        <div class="card-header">
+            <div class="toggle-map">
+                <input type="checkbox" name="toggle-map" id="map-toggler">
+                <label for="toggle-map">Toggle Map</label>
+            </div>
+            <div id="card-list">
+
+            </div>
+        </div>
+    </div>
+    <div id="map">
+    </div>
+</div>
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoiZGF1ZGk5NyIsImEiOiJjanJtY3B1bjYwZ3F2NGFvOXZ1a29iMmp6In0.9ZdvuGInodgDk7cv-KlujA';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v10',
+        zoom: 13,
+        center: [36.894932965685598, -1.28046266542411 ]
+    });
+
+    var cardList = document.getElementById("card-list");
+    var containerElement = document.getElementById('container');
+    var mapToggler = document.getElementById('map-toggler');
+
+    map.on('load', function(e) {
+
+        map.loadImage(
+            'https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png',
+            function (error, image) {
+                if (error) throw error;
+                map.addImage('custom-marker', image);
+            }
+        );
+
+        map.addSource('points', {
+        'type': 'geojson',
+        'data': {
+            'type': 'FeatureCollection',
+            'features': []
+        }
+        });
+
+        map.addLayer({
+            'id': 'points',
+            'type': 'symbol',
+            'source': 'points',
+            'layout': {
+                'icon-image': 'custom-marker',
+                'text-offset': [0, 1.25],
+                'text-anchor': 'top'
+            }
+        });
+
+        fetch('points.geojson')
+        .then(response => response.json())
+        .then(data => {
+            map.getSource('points').setData(data);
+            createCard(data);
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+    });
+
+    
+    function createCard(data) {
+        let cardListString = "";
+
+        let images = ['hail.jpg', 'snow.jpg', 'sleet.jpg', 'snow.jpg', 'thunderstorm.jpg','heavyrain.jpg', 'showers.jpg'];
+
+        data.features.forEach(feature => {
+            let imageName = images[Math.floor((Math.random() * 7))];
+
+            cardListString += '<figure class="card">'+
+            '<img src="images/'+imageName+'" class="img" alt="Place name">'+
+            '<figcaption>'+
+                + feature.properties['elec_area_']+
+                '<div class="details-section">'+
+                    '<span>' + feature.properties.local_auth+'</span>'+
+                    '<span>' + feature.properties.county_nam+'</span>'+
+                    '<span>' + feature.properties.const_nam+'</span>'+
+                '</div>'+
+           ' </figcaption>'+
+            '</figure>'
+        });
+
+        cardList.innerHTML = cardListString;
+    }
+
+    mapToggler.addEventListener('click', function(e) {
+        if(e.target.checked) {
+            container.classList.add('close-map');
+        } else {
+            container.classList.remove('close-map');
+        }
+    });
+</script>
+
+</body>
+</html>
